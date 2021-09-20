@@ -8,13 +8,18 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.net.JarURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  *
@@ -27,7 +32,7 @@ public class MyDispacherServlet extends HttpServlet {
     //初始化IoC
     private Map<String, Object> ioc = new HashMap<>();
     private Properties contextConfig = new Properties();
-    private List<String> classNames = new ArrayList<>();
+    private Set<Class<?>> classes = new HashSet<>();
     private Map<String, Method> reqMapping = new HashMap<>();
 
     @Override
@@ -72,6 +77,7 @@ public class MyDispacherServlet extends HttpServlet {
             resp.getWriter().println(invoke);
 
         } catch (Exception e) {
+            e.printStackTrace();
             resp.setStatus(500);
             try {
                 resp.getWriter().println("500 Server internal error");
@@ -165,8 +171,7 @@ public class MyDispacherServlet extends HttpServlet {
 
     private void doInstance() throws Exception {
 
-        for (String className : classNames) {
-            Class<?> aClass = Class.forName(className);
+        for (Class<?> aClass : classes) {
 
             //如果没有Component等注解，跳过
             if (!aClass.isAnnotationPresent(Component.class) &&
@@ -226,25 +231,8 @@ public class MyDispacherServlet extends HttpServlet {
                 simpleName.substring(1);
     }
 
-    private void doScanner(String scanPackage) {
-        String scanFileName = "/" + scanPackage.replaceAll("\\.", "/");
-        URL resource = Thread.currentThread().getContextClassLoader().getResource(scanFileName);
-        String fileName = resource.getFile();
-        File file = new File(fileName);
-        file.listFiles(fileFilter -> {
-            String name = fileFilter.getName();
-            if (fileFilter.isDirectory()) {
-                doScanner(scanPackage + "." + name);
-            }
-            if (name.endsWith(".class")) {
-                classNames.add(scanPackage + "." + name.substring(0, name.lastIndexOf(".")));
-                return true;
-            }
-            return false;
-        });
-
-
-
+    private void doScanner(String scanPackage) throws IOException {
+        classes = ScannerUtils.getClasses(scanPackage);
     }
 
     private void doLoadConfig(ServletConfig config) {
@@ -263,6 +251,35 @@ public class MyDispacherServlet extends HttpServlet {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    public static void findAndAddClassesInPackageByFile(String packageName, String packagePath, final boolean recursive, Set<Class<?>> classes) {
+        File dir = new File(packagePath);
+        if (dir.exists() && dir.isDirectory()) {
+            File[] dirfiles = dir.listFiles(new FileFilter() {
+                public boolean accept(File file) {
+                    return recursive && file.isDirectory() || file.getName().endsWith(".class");
+                }
+            });
+            File[] var6 = dirfiles;
+            int var7 = dirfiles.length;
+
+            for(int var8 = 0; var8 < var7; ++var8) {
+                File file = var6[var8];
+                if (file.isDirectory()) {
+                    findAndAddClassesInPackageByFile(packageName + "." + file.getName(), file.getAbsolutePath(), recursive, classes);
+                } else {
+                    String className = file.getName().substring(0, file.getName().length() - 6);
+
+                    try {
+                        classes.add(Thread.currentThread().getContextClassLoader().loadClass(packageName + '.' + className));
+                    } catch (ClassNotFoundException var12) {
+                        var12.printStackTrace();
+                    }
+                }
+            }
+
         }
     }
 }
