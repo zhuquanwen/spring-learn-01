@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -57,18 +58,48 @@ public class MyDispacherServlet extends HttpServlet {
             }
             Method method = reqMapping.get(url);
             Object[] args = new Object[method.getParameterCount()];
-            //暂时只支持RequestParam
-            Parameter[] parameters = method.getParameters();
-            if (parameters != null) {
-                for (int i = 0; i < parameters.length; i++) {
-                    if (parameters[i].isAnnotationPresent(RequestParam.class)) {
-                        RequestParam requestParam = parameters[i].getAnnotation(RequestParam.class);
-                        String parameter = req.getParameter(requestParam.value());
-                        //需要做类型转换，暂时认为参数只能是String
-                        args[i] = parameter;
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes != null) {
+                Map<String, String[]> parameterMap = req.getParameterMap();
+                for (int i = 0; i < parameterTypes.length; i++) {
+                    Class<?> parameterType = parameterTypes[i];
+                    if (parameterType == HttpServletRequest.class) {
+                        args[i] = req;
+                    } else if (parameterType == HttpServletResponse.class) {
+                        args[i] = resp;
+                    } else {
+                        Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+                        if (parameterAnnotations != null) {
+                            for (int i1 = 0; i1 < parameterAnnotations.length; i1++) {
+                                for (Annotation parameterAnnotation : parameterAnnotations[i1]) {
+                                    //暂时只支持RequestParam
+                                    if (parameterAnnotation instanceof RequestParam) {
+                                        String requestParamName = ((RequestParam) parameterAnnotation).value().trim();
+                                        if (!"".equals(requestParamName)) {
+                                            String param = Arrays.toString(parameterMap.get(requestParamName))
+                                                    .replaceAll("\\[|\\]", "")
+                                                    .replaceAll("\\s", "");
+                                            args[i] = param;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
+//            //暂时只支持RequestParam
+//            Parameter[] parameters = method.getParameters();
+//            if (parameters != null) {
+//                for (int i = 0; i < parameters.length; i++) {
+//                    if (parameters[i].isAnnotationPresent(RequestParam.class)) {
+//                        RequestParam requestParam = parameters[i].getAnnotation(RequestParam.class);
+//                        String parameter = req.getParameter(requestParam.value());
+//                        //需要做类型转换，暂时认为参数只能是String
+//                        args[i] = parameter;
+//                    }
+//                }
+//            }
             Class<?> declaringClass = method.getDeclaringClass();
             String simpleName = declaringClass.getSimpleName();
             simpleName = firstLower(simpleName);
@@ -215,9 +246,9 @@ public class MyDispacherServlet extends HttpServlet {
             if (interfaces != null) {
                 for (Class<?> anInterface : interfaces) {
                     String interfaceBeanName = firstLower(anInterface.getSimpleName());
-                    if (ioc.containsKey(interfaceBeanName)) {
+                    if (ioc.containsKey(interfaceBeanName) && "".equals(value)) {
                         //如果有重名的key,报错
-                        throw new Exception(String.format("接口[%s]有两个重复的BeanName[%s],分别是[%s],[%s]",
+                        throw new Exception(String.format("接口[%s]有两个重复的BeanName[%s],且没有指定beanName，分别是[%s],[%s]",
                                 anInterface.getName(), interfaceBeanName, ioc.get(beanName).getClass().getName(), aClass.getName()));
                     }
                     ioc.put(interfaceBeanName, o);
