@@ -21,7 +21,7 @@ public class BizApp {
         DeploymentInfo servletBuilder = Servlets.deployment().setClassLoader(BizApp.class.getClassLoader())
                 .setDeploymentName("spring-demo").setContextPath("/")
                 .addServlets(Servlets.servlet("dispacherServlet", MyDispacherServlet.class)
-                        .addInitParam("configurationLocation", "application.properties")
+                        .addInitParam(Constants.INIT_PARAMETER_CONFIGURATION_LOCATION, "application.properties")
                         .addMapping("/*"));
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
         manager.deploy();

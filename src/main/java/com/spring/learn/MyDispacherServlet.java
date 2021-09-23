@@ -1,6 +1,9 @@
 package com.spring.learn;
 
 import com.spring.learn.annotation.*;
+import com.spring.learn.context.ApplicationContext;
+import com.spring.learn.util.ScannerUtils;
+import com.spring.learn.util.StringUtil;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -14,13 +17,7 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.util.*;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 /**
  *
@@ -29,12 +26,13 @@ import java.util.jar.JarFile;
  * @date 2020/11/29 21:01
  * @since jdk1.8
  */
-public class MyDispacherServlet extends HttpServlet {
+public class MyDispacherServlet extends HttpServlet implements Constants {
     //初始化IoC
     private Map<String, Object> ioc = new HashMap<>();
     private Properties contextConfig = new Properties();
     private Set<Class<?>> classes = new HashSet<>();
     private Map<String, Method> reqMapping = new HashMap<>();
+    private ApplicationContext applicationContext;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -102,7 +100,7 @@ public class MyDispacherServlet extends HttpServlet {
 //            }
             Class<?> declaringClass = method.getDeclaringClass();
             String simpleName = declaringClass.getSimpleName();
-            simpleName = firstLower(simpleName);
+            simpleName = StringUtil.firstLower(simpleName);
             Object invoke = method.invoke(ioc.get(simpleName), args);
             resp.setStatus(200);
             resp.getWriter().println(invoke);
@@ -122,6 +120,9 @@ public class MyDispacherServlet extends HttpServlet {
     @Override
     public void init(ServletConfig config) throws ServletException {
         try {
+            //初始化applicationContext
+            applicationContext = new ApplicationContext(config.getInitParameter(INIT_PARAMETER_CONFIGURATION_LOCATION));
+
             //1、加载配置文件
             doLoadConfig(config);
 
@@ -188,7 +189,7 @@ public class MyDispacherServlet extends HttpServlet {
                     String beanName = autowired.name();
                     if ("".equals(beanName)) {
                         String name = declaredField.getType().getSimpleName();
-                        beanName = firstLower(name);
+                        beanName = StringUtil.firstLower(name);
                     }
                     Object fieldObj = ioc.get(beanName);
                     declaredField.setAccessible(true);
@@ -230,7 +231,7 @@ public class MyDispacherServlet extends HttpServlet {
                 beanName = value;
             } else {
                 //默认类名首字母小写
-                beanName = firstLower(aClass.getSimpleName());
+                beanName = StringUtil.firstLower(aClass.getSimpleName());
             }
 
             if (ioc.containsKey(beanName)) {
@@ -245,7 +246,7 @@ public class MyDispacherServlet extends HttpServlet {
             Class<?>[] interfaces = aClass.getInterfaces();
             if (interfaces != null) {
                 for (Class<?> anInterface : interfaces) {
-                    String interfaceBeanName = firstLower(anInterface.getSimpleName());
+                    String interfaceBeanName = StringUtil.firstLower(anInterface.getSimpleName());
                     if (ioc.containsKey(interfaceBeanName) && "".equals(value)) {
                         //如果有重名的key,报错
                         throw new Exception(String.format("接口[%s]有两个重复的BeanName[%s],且没有指定beanName，分别是[%s],[%s]",
@@ -257,10 +258,7 @@ public class MyDispacherServlet extends HttpServlet {
         }
     }
 
-    private String firstLower(String simpleName) {
-        return simpleName.substring(0, 1).toLowerCase() +
-                simpleName.substring(1);
-    }
+
 
     private void doScanner(String scanPackage) throws IOException {
         classes = ScannerUtils.getClasses(scanPackage);

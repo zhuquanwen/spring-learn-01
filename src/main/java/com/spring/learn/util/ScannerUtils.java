@@ -1,4 +1,4 @@
-package com.spring.learn;
+package com.spring.learn.util;
 
 
 import java.io.File;
@@ -21,23 +21,6 @@ import java.util.jar.JarFile;
  **/
 
 public class ScannerUtils {
-//    public static void main(String[] args) throws IOException {
-////        Set<Class<?>> sets = getClasses("com.iscas");
-////        sets.stream().forEach(System.out::println);
-////        String packageRealPath = getPackageRealPath("com.iscas.det");
-////        System.out.println(packageRealPath);
-////        File file = new File(packageRealPath);
-////        System.out.println(file.getAbsolutePath());
-//
-//        String property = System.getProperty("user.dir");
-//        System.out.println(property);
-//
-//        File directory = new File("");//参数为空
-//        String courseFile = directory.getCanonicalPath() ;
-//        System.out.println(courseFile);
-//
-//
-//    }
 
     public static Set<Class<?>> getClasses(String pack){
         return getClasses(pack, true);
