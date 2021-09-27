@@ -123,14 +123,14 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
             //初始化applicationContext
             applicationContext = new ApplicationContext(config.getInitParameter(INIT_PARAMETER_CONFIGURATION_LOCATION));
 
-            //1、加载配置文件
-            doLoadConfig(config);
-
-            //2、扫描相关的类
-            doScanner(contextConfig.getProperty("scanPackage"));
-
-            //3、实例化扫描到的类，并且缓存到IoC容器中
-            doInstance();
+//            //1、加载配置文件
+//            doLoadConfig(config);
+//
+//            //2、扫描相关的类
+//            doScanner(contextConfig.getProperty("scanPackage"));
+//
+//            //3、实例化扫描到的类，并且缓存到IoC容器中
+//            doInstance();
 
             //4、完成依赖注入
             doAutowired();
@@ -147,7 +147,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
     private void doInitHandlerMapping() {
         for (Map.Entry<String, Object> entry : ioc.entrySet()) {
             Class<?> aClass = entry.getValue().getClass();
-            if (!aClass.isAnnotationPresent(Controller.class)) {
+            if (!aClass.isAnnotationPresent(RestController.class)) {
                 continue;
             }
 
@@ -207,7 +207,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
 
             //如果没有Component等注解，跳过
             if (!aClass.isAnnotationPresent(Component.class) &&
-                    !aClass.isAnnotationPresent(Controller.class) &&
+                    !aClass.isAnnotationPresent(RestController.class) &&
                     !aClass.isAnnotationPresent(Service.class) &&
                     !aClass.isAnnotationPresent(Repository.class)) {
                 continue;
@@ -223,7 +223,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
             Component component = aClass.getAnnotation(Component.class);
             String value = component != null ? component.value() : null;
             value = value != null ? value : aClass.getAnnotation(Service.class) != null ? aClass.getAnnotation(Service.class).value() : null;
-            value = value != null ? value : aClass.getAnnotation(Controller.class) != null ? aClass.getAnnotation(Controller.class).value() : null;
+            value = value != null ? value : aClass.getAnnotation(RestController.class) != null ? aClass.getAnnotation(RestController.class).value() : null;
             value = value != null ? value : aClass.getAnnotation(Repository.class) != null ? aClass.getAnnotation(Repository.class).value() : null;
 
 

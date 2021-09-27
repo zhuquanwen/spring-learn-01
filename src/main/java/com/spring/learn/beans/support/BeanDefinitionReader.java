@@ -3,6 +3,7 @@ package com.spring.learn.beans.support;
 import com.spring.learn.Constants;
 import com.spring.learn.config.BeanDefinition;
 import com.spring.learn.util.ScannerUtils;
+import com.spring.learn.util.StringUtil;
 
 import javax.servlet.ServletConfig;
 import java.io.IOException;
@@ -10,7 +11,6 @@ import java.io.InputStream;
 import java.util.*;
 
 /**
- *
  * @author zhuquanwen
  * @vesion 1.0
  * @date 2021/9/23 20:58
@@ -37,10 +37,25 @@ public class BeanDefinitionReader implements Constants {
 
     public List<BeanDefinition> doLoadBeanDefinitions() {
         List<BeanDefinition> definitions = new ArrayList<>();
+
         for (Class<?> beanClass : registryBeanClass) {
-            
+            if (beanClass.isInterface()) {
+                continue;
+            }
+            //默认使用类型首字母小写的名字作为key
+            definitions.add(doCreateBeanDefinition(StringUtil.firstLower(beanClass.getSimpleName()), beanClass.getName()));
+
+            //如果这个类有接口,使用接口名字作为key
+            Optional.ofNullable(beanClass.getInterfaces())
+                    .ifPresent(interfaces -> Arrays.stream(interfaces).forEach(anInterface -> {
+                        definitions.add(doCreateBeanDefinition(StringUtil.firstLower(anInterface.getName()), beanClass.getName()));
+                    }));
         }
         return definitions;
+    }
+
+    private BeanDefinition doCreateBeanDefinition(String factoryBeanName, String beanClassName) {
+        return new BeanDefinition(factoryBeanName, beanClassName);
     }
 
     private void doLoadConfig(String location) {

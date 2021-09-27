@@ -9,7 +9,7 @@ import com.spring.learn.annotation.*;
  * @date 2020/12/1 21:18
  * @since jdk1.8
  */
-@Controller
+@RestController
 @RequestMapping("/t")
 public class TestController {
     @Autowired
