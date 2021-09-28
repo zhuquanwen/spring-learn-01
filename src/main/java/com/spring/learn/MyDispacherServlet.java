@@ -28,9 +28,7 @@ import java.util.*;
  */
 public class MyDispacherServlet extends HttpServlet implements Constants {
     //初始化IoC
-    private Map<String, Object> ioc = new HashMap<>();
     private Properties contextConfig = new Properties();
-    private Set<Class<?>> classes = new HashSet<>();
     private Map<String, Method> reqMapping = new HashMap<>();
     private ApplicationContext applicationContext;
 
@@ -99,9 +97,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
 //                }
 //            }
             Class<?> declaringClass = method.getDeclaringClass();
-            String simpleName = declaringClass.getSimpleName();
-            simpleName = StringUtil.firstLower(simpleName);
-            Object invoke = method.invoke(ioc.get(simpleName), args);
+            Object invoke = method.invoke(this.applicationContext.getBean(declaringClass), args);
             resp.setStatus(200);
             resp.getWriter().println(invoke);
 
@@ -133,7 +129,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
 //            doInstance();
 
             //4、完成依赖注入
-            doAutowired();
+//            doAutowired();
 
             //5、初始化HandlerMapping
             doInitHandlerMapping();
@@ -145,6 +141,9 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
     }
 
     private void doInitHandlerMapping() {
+        if (this.applicationContext.getBeanDefiniationCount() == 0) {
+            return;
+        }
         for (Map.Entry<String, Object> entry : ioc.entrySet()) {
             Class<?> aClass = entry.getValue().getClass();
             if (!aClass.isAnnotationPresent(RestController.class)) {
@@ -173,142 +172,4 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
         }
     }
 
-    private void doAutowired() throws IllegalAccessException {
-        Set<Object> inited = new HashSet<>();
-        for (Object o : ioc.values()) {
-            if (inited.contains(o)) {
-                continue;
-            }
-            Field[] declaredFields = o.getClass().getDeclaredFields();
-            if (declaredFields != null) {
-                for (Field declaredField : declaredFields) {
-                    if (!declaredField.isAnnotationPresent(Autowired.class)) {
-                        continue;
-                    }
-                    Autowired autowired = declaredField.getAnnotation(Autowired.class);
-                    String beanName = autowired.name();
-                    if ("".equals(beanName)) {
-                        String name = declaredField.getType().getSimpleName();
-                        beanName = StringUtil.firstLower(name);
-                    }
-                    Object fieldObj = ioc.get(beanName);
-                    declaredField.setAccessible(true);
-                    declaredField.set(o, fieldObj);
-
-                }
-            }
-            inited.add(o);
-        }
-    }
-
-    private void doInstance() throws Exception {
-
-        for (Class<?> aClass : classes) {
-
-            //如果没有Component等注解，跳过
-            if (!aClass.isAnnotationPresent(Component.class) &&
-                    !aClass.isAnnotationPresent(RestController.class) &&
-                    !aClass.isAnnotationPresent(Service.class) &&
-                    !aClass.isAnnotationPresent(Repository.class)) {
-                continue;
-            }
-
-            //如果是接口，跳过
-            if (aClass.isInterface()) {
-                continue;
-            }
-
-            String beanName = null;
-            //取到Component的value作为Bean的name
-            Component component = aClass.getAnnotation(Component.class);
-            String value = component != null ? component.value() : null;
-            value = value != null ? value : aClass.getAnnotation(Service.class) != null ? aClass.getAnnotation(Service.class).value() : null;
-            value = value != null ? value : aClass.getAnnotation(RestController.class) != null ? aClass.getAnnotation(RestController.class).value() : null;
-            value = value != null ? value : aClass.getAnnotation(Repository.class) != null ? aClass.getAnnotation(Repository.class).value() : null;
-
-
-            if (!"".equals(value)) {
-                beanName = value;
-            } else {
-                //默认类名首字母小写
-                beanName = StringUtil.firstLower(aClass.getSimpleName());
-            }
-
-            if (ioc.containsKey(beanName)) {
-                //如果有重名的key,报错
-                throw new Exception(String.format("有两个重复的BeanName[%s],分别是[%s],[%s]",
-                        beanName, ioc.get(beanName).getClass().getName(), aClass.getName()));
-            }
-
-            Object o = aClass.getDeclaredConstructor().newInstance();
-            ioc.put(beanName, o);
-
-            Class<?>[] interfaces = aClass.getInterfaces();
-            if (interfaces != null) {
-                for (Class<?> anInterface : interfaces) {
-                    String interfaceBeanName = StringUtil.firstLower(anInterface.getSimpleName());
-                    if (ioc.containsKey(interfaceBeanName) && "".equals(value)) {
-                        //如果有重名的key,报错
-                        throw new Exception(String.format("接口[%s]有两个重复的BeanName[%s],且没有指定beanName，分别是[%s],[%s]",
-                                anInterface.getName(), interfaceBeanName, ioc.get(beanName).getClass().getName(), aClass.getName()));
-                    }
-                    ioc.put(interfaceBeanName, o);
-                }
-            }
-        }
-    }
-
-
-
-    private void doScanner(String scanPackage) throws IOException {
-        classes = ScannerUtils.getClasses(scanPackage);
-    }
-
-    private void doLoadConfig(ServletConfig config) {
-        String configurationLocation = config.getInitParameter("configurationLocation");
-        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(configurationLocation);
-
-        try {
-            contextConfig.load(is);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (null != is) {
-                try {
-                    is.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public static void findAndAddClassesInPackageByFile(String packageName, String packagePath, final boolean recursive, Set<Class<?>> classes) {
-        File dir = new File(packagePath);
-        if (dir.exists() && dir.isDirectory()) {
-            File[] dirfiles = dir.listFiles(new FileFilter() {
-                public boolean accept(File file) {
-                    return recursive && file.isDirectory() || file.getName().endsWith(".class");
-                }
-            });
-            File[] var6 = dirfiles;
-            int var7 = dirfiles.length;
-
-            for(int var8 = 0; var8 < var7; ++var8) {
-                File file = var6[var8];
-                if (file.isDirectory()) {
-                    findAndAddClassesInPackageByFile(packageName + "." + file.getName(), file.getAbsolutePath(), recursive, classes);
-                } else {
-                    String className = file.getName().substring(0, file.getName().length() - 6);
-
-                    try {
-                        classes.add(Thread.currentThread().getContextClassLoader().loadClass(packageName + '.' + className));
-                    } catch (ClassNotFoundException var12) {
-                        var12.printStackTrace();
-                    }
-                }
-            }
-
-        }
-    }
 }

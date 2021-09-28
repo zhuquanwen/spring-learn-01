@@ -1,17 +1,13 @@
 package com.spring.learn.context;
 
-import com.spring.learn.annotation.Component;
-import com.spring.learn.annotation.Repository;
-import com.spring.learn.annotation.RestController;
-import com.spring.learn.annotation.Service;
+import com.spring.learn.annotation.*;
 import com.spring.learn.beans.BeanWrapper;
 import com.spring.learn.beans.support.BeanDefinitionReader;
 import com.spring.learn.config.BeanDefinition;
 import com.spring.learn.util.StringUtil;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  *
@@ -21,6 +17,7 @@ import java.util.Map;
  * @since jdk1.8
  */
 public class ApplicationContext {
+
     private String[] locations;
     private BeanDefinitionReader reader;
     private Map<String, BeanDefinition> beanDefinitionMap = new HashMap<>();
@@ -97,9 +94,34 @@ public class ApplicationContext {
         return this.factoryBeanInstanceCache.get(beanName).getWrapperInstance();
     }
 
-    private void populateBean(String beanName, BeanDefinition beanDefinition, BeanWrapper beanWrapper) {
-
+    public int getBeanDefiniationCount() {
+        return beanDefinitionMap.size();
     }
+
+
+    private void populateBean(String beanName, BeanDefinition beanDefinition, BeanWrapper beanWrapper) throws IllegalAccessException {
+        Object instance = beanWrapper.getWrapperInstance();
+        Class<?> wrapperClass = beanWrapper.getWrapperClass();
+        Field[] fields = wrapperClass.getDeclaredFields();
+        for (Field field : fields) {
+            if (!field.isAnnotationPresent(Autowired.class)) {
+                continue;
+            }
+
+            Autowired autowired = field.getAnnotation(Autowired.class);
+            String autowiredBeanName = autowired.name();
+            if ("".equals(autowiredBeanName)) {
+                autowiredBeanName = field.getType().getName();
+            }
+            if (!factoryBeanInstanceCache.containsKey(autowiredBeanName)) {
+                continue;
+            }
+            field.setAccessible(true);
+            field.set(instance, factoryBeanInstanceCache.get(autowiredBeanName));
+        }
+    }
+
+
 
     private Object instaniateBean(String beanName, BeanDefinition beanDefinition) throws Exception {
         String beanClassName = beanDefinition.getBeanClassName();
