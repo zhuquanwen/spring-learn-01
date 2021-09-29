@@ -1,6 +1,10 @@
 package com.spring.learn.beans.support;
 
 import com.spring.learn.Constants;
+import com.spring.learn.annotation.Component;
+import com.spring.learn.annotation.Repository;
+import com.spring.learn.annotation.RestController;
+import com.spring.learn.annotation.Service;
 import com.spring.learn.config.BeanDefinition;
 import com.spring.learn.util.ScannerUtils;
 import com.spring.learn.util.StringUtil;
@@ -9,6 +13,7 @@ import javax.servlet.ServletConfig;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author zhuquanwen
@@ -69,7 +74,10 @@ public class BeanDefinitionReader implements Constants {
 
     private void doScanner(String scanPackages) throws IOException {
         for (String scanPackage : scanPackages.split(",")) {
-            registryBeanClass.addAll(ScannerUtils.getClasses(scanPackage));
+            registryBeanClass.addAll(ScannerUtils.getClasses(scanPackage).stream().filter(aClass ->  aClass.isAnnotationPresent(Component.class) ||
+                    aClass.isAnnotationPresent(RestController.class) ||
+                    aClass.isAnnotationPresent(Service.class) ||
+                    aClass.isAnnotationPresent(Repository.class)).collect(Collectors.toList()));
         }
     }
 }

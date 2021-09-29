@@ -117,7 +117,7 @@ public class ApplicationContext {
                 continue;
             }
             field.setAccessible(true);
-            field.set(instance, factoryBeanInstanceCache.get(autowiredBeanName));
+            field.set(instance, factoryBeanInstanceCache.get(autowiredBeanName).getWrapperInstance());
         }
     }
 
@@ -138,5 +138,9 @@ public class ApplicationContext {
 
         this.factoryBeanObjectCache.put(beanName, instance);
         return instance;
+    }
+
+    public String[] getBeanDefiniationNames() {
+        return beanDefinitionMap.keySet().toArray(new String[beanDefinitionMap.size()]);
     }
 }

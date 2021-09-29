@@ -1,23 +1,22 @@
 package com.spring.learn;
 
-import com.spring.learn.annotation.*;
+import com.spring.learn.annotation.RequestMapping;
+import com.spring.learn.annotation.RequestParam;
+import com.spring.learn.annotation.RestController;
 import com.spring.learn.context.ApplicationContext;
-import com.spring.learn.util.ScannerUtils;
-import com.spring.learn.util.StringUtil;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  *
@@ -84,18 +83,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
                     }
                 }
             }
-//            //暂时只支持RequestParam
-//            Parameter[] parameters = method.getParameters();
-//            if (parameters != null) {
-//                for (int i = 0; i < parameters.length; i++) {
-//                    if (parameters[i].isAnnotationPresent(RequestParam.class)) {
-//                        RequestParam requestParam = parameters[i].getAnnotation(RequestParam.class);
-//                        String parameter = req.getParameter(requestParam.value());
-//                        //需要做类型转换，暂时认为参数只能是String
-//                        args[i] = parameter;
-//                    }
-//                }
-//            }
+
             Class<?> declaringClass = method.getDeclaringClass();
             Object invoke = method.invoke(this.applicationContext.getBean(declaringClass), args);
             resp.setStatus(200);
@@ -140,12 +128,14 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
         }
     }
 
-    private void doInitHandlerMapping() {
+    private void doInitHandlerMapping() throws Exception {
         if (this.applicationContext.getBeanDefiniationCount() == 0) {
             return;
         }
-        for (Map.Entry<String, Object> entry : ioc.entrySet()) {
-            Class<?> aClass = entry.getValue().getClass();
+        String[] beanNames = applicationContext.getBeanDefiniationNames();
+        for (String beanName : beanNames) {
+            Object instance = applicationContext.getBean(beanName);
+            Class<?> aClass = instance.getClass();
             if (!aClass.isAnnotationPresent(RestController.class)) {
                 continue;
             }
@@ -170,6 +160,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
                 reqMapping.put(url, method);
             }
         }
+
     }
 
 }

@@ -13,7 +13,7 @@ import com.spring.learn.annotation.*;
 @RequestMapping("/t")
 public class TestController {
     @Autowired
-    private TestService testService;
+    private ITestService testService;
     @RequestMapping(method = RequestMethod.GET, value = "/t")
     public String aaa(@RequestParam("a") String a) {
         return "hi:" + testService.test(a);

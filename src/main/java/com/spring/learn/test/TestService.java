@@ -10,7 +10,7 @@ import com.spring.learn.annotation.Service;
  * @since jdk1.8
  */
 @Service
-public class TestService {
+public class TestService implements ITestService {
     public String test(String name) {
         return name.toUpperCase();
     }
