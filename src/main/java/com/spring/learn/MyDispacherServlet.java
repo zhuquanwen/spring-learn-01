@@ -1,8 +1,6 @@
 package com.spring.learn;
 
-import com.spring.learn.annotation.RequestMapping;
 import com.spring.learn.annotation.RequestParam;
-import com.spring.learn.annotation.RestController;
 import com.spring.learn.context.ApplicationContext;
 
 import javax.servlet.ServletConfig;
@@ -29,7 +27,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
     //初始化IoC
     private Properties contextConfig = new Properties();
     private Map<String, Method> reqMapping = new HashMap<>();
-    private ApplicationContext applicationContext;
+    private ApplicationContext context;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -85,7 +83,7 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
             }
 
             Class<?> declaringClass = method.getDeclaringClass();
-            Object invoke = method.invoke(this.applicationContext.getBean(declaringClass), args);
+            Object invoke = method.invoke(this.context.getBean(declaringClass), args);
             resp.setStatus(200);
             resp.getWriter().println(invoke);
 
@@ -105,22 +103,14 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
     public void init(ServletConfig config) throws ServletException {
         try {
             //初始化applicationContext
-            applicationContext = new ApplicationContext(config.getInitParameter(INIT_PARAMETER_CONFIGURATION_LOCATION));
+            context = new ApplicationContext(config.getInitParameter(INIT_PARAMETER_CONFIGURATION_LOCATION));
 
-//            //1、加载配置文件
-//            doLoadConfig(config);
-//
-//            //2、扫描相关的类
-//            doScanner(contextConfig.getProperty("scanPackage"));
-//
-//            //3、实例化扫描到的类，并且缓存到IoC容器中
-//            doInstance();
 
-            //4、完成依赖注入
-//            doAutowired();
 
             //5、初始化HandlerMapping
-            doInitHandlerMapping();
+//            doInitHandlerMapping();
+
+            initStrategies(context);
 
             System.out.println("服务已启动");
         } catch (Exception e) {
@@ -128,39 +118,72 @@ public class MyDispacherServlet extends HttpServlet implements Constants {
         }
     }
 
-    private void doInitHandlerMapping() throws Exception {
-        if (this.applicationContext.getBeanDefiniationCount() == 0) {
-            return;
-        }
-        String[] beanNames = applicationContext.getBeanDefiniationNames();
-        for (String beanName : beanNames) {
-            Object instance = applicationContext.getBean(beanName);
-            Class<?> aClass = instance.getClass();
-            if (!aClass.isAnnotationPresent(RestController.class)) {
-                continue;
-            }
+    private void initStrategies(ApplicationContext context) {
+//        //多文件上传组件
+//        initMultipartResolver(context);
+//        //初始化本地语言环境
+//        initLocaleResolver(context);
+//        //初始化模板处理器
+//        initThemeResolver(context);
+        //handlerMapping
+        initHandlerMappings(context);
+        //初始化参数适配器
+        initHandlerAdapters(context);
+//        //初始化异常拦截器
+//        initHandlerExceptionResolvers(context);
+//        //初始化视图转换器
+//        initRequestToViewNameTranslator(context);
+        //初始化视图处理器
+        initViewResolvers(context);
+//        //flashMap管理器
+//        initFlashMapManager(context);
+    }
 
-            //获取上层path
-            RequestMapping baseReqMapping = aClass.getAnnotation(RequestMapping.class);
-            String basePath = null;
-            if (baseReqMapping != null) {
-                basePath = baseReqMapping.value();
-            }
-
-            //只取public的函数
-            Method[] methods = aClass.getMethods();
-            for (Method method : methods) {
-                //函数必须被注解RequestMapping修饰
-                if (!method.isAnnotationPresent(RequestMapping.class)) {
-                    continue;
-                }
-                RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
-                String url = requestMapping.value();
-                url = ("/" + basePath + "/" + url).replaceAll("/+", "/");
-                reqMapping.put(url, method);
-            }
-        }
+    private void initViewResolvers(ApplicationContext context) {
 
     }
+
+    private void initHandlerAdapters(ApplicationContext context) {
+
+    }
+
+    private void initHandlerMappings(ApplicationContext context) {
+
+    }
+
+//    private void doInitHandlerMapping() throws Exception {
+//        if (this.applicationContext.getBeanDefiniationCount() == 0) {
+//            return;
+//        }
+//        String[] beanNames = applicationContext.getBeanDefiniationNames();
+//        for (String beanName : beanNames) {
+//            Object instance = applicationContext.getBean(beanName);
+//            Class<?> aClass = instance.getClass();
+//            if (!aClass.isAnnotationPresent(RestController.class)) {
+//                continue;
+//            }
+//
+//            //获取上层path
+//            RequestMapping baseReqMapping = aClass.getAnnotation(RequestMapping.class);
+//            String basePath = null;
+//            if (baseReqMapping != null) {
+//                basePath = baseReqMapping.value();
+//            }
+//
+//            //只取public的函数
+//            Method[] methods = aClass.getMethods();
+//            for (Method method : methods) {
+//                //函数必须被注解RequestMapping修饰
+//                if (!method.isAnnotationPresent(RequestMapping.class)) {
+//                    continue;
+//                }
+//                RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+//                String url = requestMapping.value();
+//                url = ("/" + basePath + "/" + url).replaceAll("/+", "/");
+//                reqMapping.put(url, method);
+//            }
+//        }
+//
+//    }
 
 }
