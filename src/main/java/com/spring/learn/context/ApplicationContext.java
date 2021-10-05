@@ -1,6 +1,9 @@
 package com.spring.learn.context;
 
 import com.spring.learn.annotation.*;
+import com.spring.learn.aop.JdkDynamicAopProxy;
+import com.spring.learn.aop.config.AopConfig;
+import com.spring.learn.aop.support.AdvisedSupport;
 import com.spring.learn.beans.BeanWrapper;
 import com.spring.learn.beans.support.BeanDefinitionReader;
 import com.spring.learn.config.BeanDefinition;
@@ -82,6 +85,10 @@ public class ApplicationContext {
         //根据BeanDefinition创建实例
         Object instance = instaniateBean(beanName, beanDefinition);
 
+        if (instance == null) {
+            return null;
+        }
+
         //将实例封装成BeanWrapper
         BeanWrapper beanWrapper = new BeanWrapper(instance);
 
@@ -135,9 +142,30 @@ public class ApplicationContext {
         Object instance = aClass.getDeclaredConstructor().newInstance();
 
         //如果匹配切面表达式，创建代理对象
+        //加载AOP配置信息
+        AdvisedSupport config = instanionAopConfig(beanDefinition);
+        config.setTargetClass(aClass);
+        config.setTarget(instance);
+        //如果满足切面规则，生成代理对象
+        if (config.pointCutMatch()) {
+            instance = new JdkDynamicAopProxy(config).getProxy();
+
+        }
 
         this.factoryBeanObjectCache.put(beanName, instance);
         return instance;
+    }
+
+    private AdvisedSupport instanionAopConfig(BeanDefinition beanDefinition) {
+        AopConfig aopConfig = new AopConfig();
+        aopConfig.setPointCut(this.reader.getConfig().getProperty("pointcut"));
+        aopConfig.setAspectClass(this.reader.getConfig().getProperty("aspect.class"));
+        aopConfig.setAspectBefore(this.reader.getConfig().getProperty("aspect.before"));
+        aopConfig.setAspectAfter(this.reader.getConfig().getProperty("aspect.after"));
+        aopConfig.setAspectAfterThrow(this.reader.getConfig().getProperty("aspect.after.throw"));
+        aopConfig.setAspectAfterThrowingName(this.reader.getConfig().getProperty("aspect.after.throwing.name"));
+        AdvisedSupport advisedSupport = new AdvisedSupport(aopConfig);
+        return advisedSupport;
     }
 
     public String[] getBeanDefiniationNames() {

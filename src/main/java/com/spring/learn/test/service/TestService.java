@@ -1,4 +1,4 @@
-package com.spring.learn.test;
+package com.spring.learn.test.service;
 
 import com.spring.learn.annotation.Service;
 
@@ -13,5 +13,10 @@ import com.spring.learn.annotation.Service;
 public class TestService implements ITestService {
     public String test(String name) {
         return name.toUpperCase();
+    }
+
+    @Override
+    public String error(String name) {
+        throw new RuntimeException("xcvb");
     }
 }

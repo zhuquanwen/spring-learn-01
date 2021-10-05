@@ -1,6 +1,7 @@
 package com.spring.learn.test;
 
 import com.spring.learn.annotation.*;
+import com.spring.learn.test.service.ITestService;
 import com.spring.learn.webmvc.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletResponse;
@@ -22,21 +23,20 @@ public class TestController {
     @RequestMapping(method = RequestMethod.GET, value = "/t")
     public ModelAndView aaa(@RequestParam("a") String a) {
         return new ModelAndView("test", new HashMap<String, Object>(){{
-            put("username", a);
+            put("username", testService.test(a));
         }});
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/error")
     public ModelAndView error(@RequestParam("a") String a) {
-        int x = 9 / 0;
         return new ModelAndView("test", new HashMap<String, Object>(){{
-            put("username", a);
+            put("username", testService.error(a));
         }});
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/json")
     public ModelAndView json(HttpServletResponse resp, @RequestParam("a") String a) throws IOException {
-        resp.getWriter().println("Hi," + a);
+        resp.getWriter().println("Hi," + testService.test(a));
         return null;
     }
 }

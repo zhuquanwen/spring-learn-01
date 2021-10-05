@@ -47,6 +47,12 @@ public class BeanDefinitionReader implements Constants {
             if (beanClass.isInterface()) {
                 continue;
             }
+            if (!beanClass.isAnnotationPresent(Component.class) &&
+                    !beanClass.isAnnotationPresent(RestController.class) &&
+                    !beanClass.isAnnotationPresent(Service.class) &&
+                    !beanClass.isAnnotationPresent(Repository.class)) {
+                continue;
+            }
             //默认使用类型首字母小写的名字作为key
             definitions.add(doCreateBeanDefinition(StringUtil.firstLower(beanClass.getSimpleName()), beanClass.getName()));
 
