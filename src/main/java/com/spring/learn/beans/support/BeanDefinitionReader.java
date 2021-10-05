@@ -59,6 +59,10 @@ public class BeanDefinitionReader implements Constants {
         return definitions;
     }
 
+    public Properties getConfig() {
+        return contextConfig;
+    }
+
     private BeanDefinition doCreateBeanDefinition(String factoryBeanName, String beanClassName) {
         return new BeanDefinition(factoryBeanName, beanClassName);
     }

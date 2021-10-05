@@ -143,4 +143,8 @@ public class ApplicationContext {
     public String[] getBeanDefiniationNames() {
         return beanDefinitionMap.keySet().toArray(new String[beanDefinitionMap.size()]);
     }
+
+    public Properties getConfig() {
+        return this.reader.getConfig();
+    }
 }

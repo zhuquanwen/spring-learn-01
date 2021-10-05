@@ -1,6 +1,11 @@
 package com.spring.learn.test;
 
 import com.spring.learn.annotation.*;
+import com.spring.learn.webmvc.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
 
 /**
  *
@@ -15,7 +20,23 @@ public class TestController {
     @Autowired
     private ITestService testService;
     @RequestMapping(method = RequestMethod.GET, value = "/t")
-    public String aaa(@RequestParam("a") String a) {
-        return "hi:" + testService.test(a);
+    public ModelAndView aaa(@RequestParam("a") String a) {
+        return new ModelAndView("test", new HashMap<String, Object>(){{
+            put("username", a);
+        }});
+    }
+
+    @RequestMapping(method = RequestMethod.GET, value = "/error")
+    public ModelAndView error(@RequestParam("a") String a) {
+        int x = 9 / 0;
+        return new ModelAndView("test", new HashMap<String, Object>(){{
+            put("username", a);
+        }});
+    }
+
+    @RequestMapping(method = RequestMethod.GET, value = "/json")
+    public ModelAndView json(HttpServletResponse resp, @RequestParam("a") String a) throws IOException {
+        resp.getWriter().println("Hi," + a);
+        return null;
     }
 }

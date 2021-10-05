@@ -7,7 +7,7 @@
 
     <servlet>
         <servlet-name>dispacherServlet</servlet-name>
-        <servlet-class>com.spring.learn.MyDispacherServlet</servlet-class>
+        <servlet-class>com.spring.learn.webmvc.servlet.MyDispacherServlet</servlet-class>
         <init-param>
             <param-name>configurationLocation</param-name>
             <param-value>application.properties</param-value>
